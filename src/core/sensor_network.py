@@ -1,10 +1,8 @@
 import json
 import asyncio
-from receiver import Receiver
-from aircraft_list_filter import AircraftListFilter
+from core.receiver import Receiver
 from helper.config_helper import getConfig
 from core.abstracts.pipeline import StreamGenerator
-from Deduplicator import Deduplicator
 class SensorNetwork(StreamGenerator):
     
     def __init__(self,sensor_list):
@@ -28,14 +26,12 @@ class SensorNetwork(StreamGenerator):
             """Instantiate a receiver and run it as an asyncio task"""
             rx = Receiver(sensor['url'], self.request_period, self.json_queue)
             task = asyncio.create_task(rx.process())
-            rx_tasks.append(task)
-        
+            rx_tasks.append(task)        
         return rx_tasks
 
     async def run(self):
         self.before_run()
         rx_tasks = await self.generate_tasks()
-        # await self.data()
         await asyncio.gather(*rx_tasks)
         # Insert a NONE sentinel in the data pipeline to indicate "end of data"
         await self.json_queue.put(None)

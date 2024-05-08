@@ -34,7 +34,7 @@ class Receiver:
                         if response.status == 200:
                             self._set_online_status(True)
                             data_json = json.loads(await response.text())
-                            # check that response is in fact json
+                            # # check that response is in fact json
                             for line in data_json:
                                 yield line
                         else:

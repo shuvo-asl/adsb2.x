@@ -10,3 +10,17 @@ class StreamGenerator(ABC):
     @abstractmethod
     async def data(self):
         """ Output generator """
+
+class StreamFilter(ABC):
+    """ Filter class for data pipeline """
+    
+    def __init__(self, input_stream):
+        self.input_stream = input_stream
+    
+    @abstractmethod
+    async def filter(self):
+        """
+        Get data from input stream
+        Return a generator functions or
+        or yield within a loop
+        """
