@@ -8,22 +8,27 @@ import asyncio
     
 """
 
+
 class Receiver:
-    def __init__(self, sensor_url, request_period,queue):
+    def __init__(self, sensor_url, request_period, queue):
         self.sensor_url = sensor_url
         self.request_period = request_period
         self.output_queue = queue
-    
+
     def _set_online_status(self, is_online):
         if is_online:
-            print("|-----------------------------------------------------------------------|")
+            print(
+                "|-----------------------------------------------------------------------|"
+            )
             print("| " + self.sensor_url + " is online")
         else:
             print(self.sensor_url + " is offline")
-            print("|-----------------------------------------------------------------------|")
-    
+            print(
+                "|-----------------------------------------------------------------------|"
+            )
+
     async def receive(self):
-        """ Periodically pull sensor data from aircraftlist.json """
+        """Periodically pull sensor data from aircraftlist.json"""
 
         remote_sensor_url = "http://" + self.sensor_url + "/aircraftlist.json"
 
@@ -33,10 +38,13 @@ class Receiver:
                     async with session.get(remote_sensor_url) as response:
                         if response.status == 200:
                             self._set_online_status(True)
-                            data_json = json.loads(await response.text())
-                            # # check that response is in fact json
-                            for line in data_json:
-                                yield line
+                            response_text = await response.text()
+                            for line in response_text[1:-2].splitlines():
+                                yield line.strip(',')
+                            # data_json = json.loads(await response.text())
+                            # # # check that response is in fact json
+                            # for line in data_json:
+                            #     yield line
                         else:
                             self._set_online_status(False)
                 except TimeoutError:

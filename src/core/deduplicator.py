@@ -15,18 +15,17 @@ class Deduplicator(StreamFilter):
 
         async for item in self.input_stream:
 
-            item_encode = json.dumps(item)
-
             # Ignore if this message has already been received
-            if item_encode in self.items:
+            if item in self.items:
                 continue
 
             # Store message in items and yield it to downstream processing
-            self.items[item_encode]  = item['uti']
-            yield item 
+            item_decode = json.loads(item)
+            self.items[item] = item_decode["uti"]
+            yield item
 
-            # Delete aged data
-            self.__delete_aged_item(self.items[item_encode])
+            # Delete aged items
+            self.__delete_aged_item(self.items[item])
 
     def __delete_aged_item(self, latest_time):
         """ Check and delete older data"""
