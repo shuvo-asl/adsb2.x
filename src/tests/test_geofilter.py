@@ -14,7 +14,7 @@ async def random_coordinate():
     ]
 
     for lat, lon in coordinates:
-        yield json.dumps({"lat": lat, "lon": lon})
+        yield {"lat": lat, "lon": lon}
         await asyncio.sleep(0.1)  # Simulate delay between data points
 
 @pytest.mark.asyncio

@@ -22,7 +22,7 @@ class Deduplicator(StreamFilter):
             # Store message in items and yield it to downstream processing
             item_decode = json.loads(item)
             self.items[item] = item_decode["uti"]
-            yield item
+            yield item_decode
 
             # Delete aged items
             self.__delete_aged_item(self.items[item])
