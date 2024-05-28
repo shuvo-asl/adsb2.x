@@ -30,17 +30,15 @@ class GeoFilter(StreamFilter):
             print(f"Fiona failed to open the shapefile: {e}")
 
 
-    async def filter(self):
+    def process_item(self,item):
 
-        async for item in self.input_stream:
-
-            # item_decode = json.loads(item)
-            lat = item.get('lat')
-            lon = item.get('lon')
-
-            if lat is not None and lon is not None:
-                point = Point(lon, lat)  # longitude, latitude
-                if self.geom_shape.contains(point):
-                    # If the point is within the feature's geometry, yield the item
-                    yield item
+        lat = item.get('lat')
+        lon = item.get('lon')
+        output_item = None
+        if lat is not None and lon is not None:
+            point = Point(lon, lat)  # longitude, latitude
+            if self.geom_shape.contains(point):
+                # If the point is within the feature's geometry, yield the item
+                output_item = item
+        return output_item
 

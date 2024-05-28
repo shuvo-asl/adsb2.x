@@ -17,36 +17,42 @@ class StreamFilter(ABC):
     
     def __init__(self, input_stream):
         self.input_stream = input_stream
-    
-    @abstractmethod
+
     async def filter(self):
-        """
-        Get data from input stream
-        Return a generator functions or
-        or yield within a loop
-        """
+        """ Forward items if they meet filter criteria """
+        async for item in self.input_stream:
+            output_item = self.process_item(item)
+            if output_item:
+                yield output_item
+
+    @abstractmethod
+    def process_item(self,item):
+        """ Return output item if it is fill up the deduplication criteria """
 
 class StreamConsumer(ABC):
-    """
-    Consume data at end of pipeline
+    """ Consume data at end of pipeline
     Self-running consumer process and close() method
     """
 
-    def __init__(self,input_stream):
+    def __init__(self, input_stream):
         self.input_stream = input_stream
         self._task = asyncio.create_task(self._run())
 
-
     async def _run(self):
+        """ Asyncio task to run input pipeline """
+        # Default behaviour is to discard input
         async for item in self.input_stream:
-            if item is None:
-                break
             await self.process_item(item)
+        await self.stop()
 
     async def closed(self):
         """ awaitable for internal task to terminate"""
         await self._task
 
     @abstractmethod
-    async def process_item(self,item):
-        pass
+    async def process_item(self, item):
+        """ Process each incoming item """
+
+    @abstractmethod
+    async def stop(self):
+        """ Indicate stopping to downstream processes """

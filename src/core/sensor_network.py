@@ -1,9 +1,9 @@
 import json
 import asyncio
-from core.receiver import Receiver
-from helper.config_helper import getConfig
-from core.abstracts.pipeline import StreamGenerator
-
+from src.core.receiver import Receiver
+from src.helper.config_helper import getConfig
+from src.core.abstracts.pipeline import StreamGenerator
+from src.core.abstracts import terminate
 
 class SensorNetwork(StreamGenerator):
 
@@ -12,6 +12,8 @@ class SensorNetwork(StreamGenerator):
         self.tracking_mode_status = getConfig("sys.tracking_mode")
         self.sensor_list = sensor_list
         self.request_period = getConfig("sys.sensor_request_period", 10)
+        self._tasks = self.run()
+        self.condition = terminate.RunControl()
 
     def before_run(self):
         if not self.tracking_mode_status:
@@ -22,7 +24,7 @@ class SensorNetwork(StreamGenerator):
             if choice.lower() == "q":
                 return  # Exit cleanly
 
-    async def generate_tasks(self):
+    def generate_tasks(self):
         rx_tasks = []
 
         for sensor in self.sensor_list:
@@ -32,14 +34,18 @@ class SensorNetwork(StreamGenerator):
             rx_tasks.append(task)
         return rx_tasks
 
-    async def run(self):
+    def run(self):
         self.before_run()
-        rx_tasks = await self.generate_tasks()
-        await asyncio.gather(*rx_tasks)
-        # Insert a NONE sentinel in the data pipeline to indicate "end of data"
-        await self.json_queue.put(None)
+        rx_tasks = self.generate_tasks()
+        return rx_tasks
+
 
     async def data(self):
         while True:
             data = await self.json_queue.get()
+            print(data)
             yield data
+    async def closed(self):
+        await asyncio.gather(*self._tasks)
+        # Insert a NONE sentinel in the data pipeline to indicate "end of data"
+        await self.json_queue.put(None)

@@ -1,5 +1,5 @@
 
-from core.abstracts.pipeline import StreamFilter
+from src.core.abstracts.pipeline import StreamFilter
 import json
 class Deduplicator(StreamFilter):
 
@@ -11,21 +11,19 @@ class Deduplicator(StreamFilter):
         self.last_check_time = 0
         super().__init__(input_stream)
 
-    async def filter(self):
-
-        async for item in self.input_stream:
-
-            # Ignore if this message has already been received
-            if item in self.items:
-                continue
+    def process_item(self,item):
+        output_items = None;
+        if not item in self.items:
 
             # Store message in items and yield it to downstream processing
             item_decode = json.loads(item)
             self.items[item] = item_decode["uti"]
-            yield item_decode
+            output_items = item_decode
 
             # Delete aged items
             self.__delete_aged_item(self.items[item])
+
+        return output_items
 
     def __delete_aged_item(self, latest_time):
         """ Check and delete older data"""
