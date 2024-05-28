@@ -1,4 +1,4 @@
-from core.abstracts.pipeline import StreamFilter
+from src.core.abstracts.pipeline import StreamFilter
 import fiona
 from shapely.geometry import shape, Point
 import json
@@ -19,10 +19,13 @@ class GeoFilter(StreamFilter):
         try:
             # Open the shapefile
             with fiona.open(shape_file_path) as fiona_collection:
-                shapefile_record = next(iter(fiona_collection))
+                try:
+                    shapefile_record = next(iter(fiona_collection))
 
-                # Convert the record's geometry to a Shapely shape
-                self.geom_shape = shape(shapefile_record['geometry'])
+                    # Convert the record's geometry to a Shapely shape
+                    self.geom_shape = shape(shapefile_record['geometry'])
+                except StopIteration:
+                    raise ValueError("Shapefile is empty, no records found.")
         except fiona.errors.DriverError as e:
             print(f"Fiona failed to open the shapefile: {e}")
 

@@ -2,7 +2,7 @@
 adsb2.x/src/tests/test_config.py
 """
 import pytest
-from core.Config import Config
+from src.core.Config import Config
 
 class TestConfig():
     

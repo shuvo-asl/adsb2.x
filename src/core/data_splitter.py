@@ -1,4 +1,5 @@
 import asyncio
+from core.abstracts.pipeline import StreamConsumer
 class DataSplitter():
 
     def __init__(self, input_stream):
@@ -26,8 +27,8 @@ class DataSplitter():
 
         hex_code = item['hex']
         current_flight_data = {
-            "opr" : item['opr'], # Operator
-            "reg" : item['reg']  # Aircraft Registration number
+            "fli" : item['fli'],
+            "squ" : item['squ']
         }
 
         try:
@@ -47,7 +48,7 @@ class DataSplitter():
         current_position_data = {
             "lat" : item['lat'],
             "lon" : item['lon'],
-            "spd": item['spd']
+            "alt": item['alt']
         }
         try:
             if self.most_recent_position[hex_code] != current_position_data:
@@ -71,3 +72,22 @@ class DataSplitter():
         while True:
             item = await self.update_position_data_queue.get()
             yield item
+
+class UpdateDetector(StreamConsumer):
+
+    POSITION_UPDATE_FIELDS = ['lat', 'lon', 'alt']
+    FLIGHT_UPDATE_FIELDS = ['fli','squ']
+    def __init__(self,input_stream):
+        self.input_stream = input_stream
+        super().__init__(input_stream)
+        self.position_queue = asyncio.Queue(100)
+        self.flightdata_queue = asyncio.Queue(100)
+
+    async def process_item(self,item):
+
+        await self.update(item,self.POSITION_UPDATE_FIELDS,self.position_queue,f"{item.get('hex')} - Position")
+        await self.update(item, self.FLIGHT_UPDATE_FIELDS, self.flightdata_queue,f"{item.get('hex')} - Flight")
+
+
+    async def update(self,item,fields,queue,msg):
+        print(msg)

@@ -1,8 +1,8 @@
 """
 adsb2.x/src/config.index.py 
 """
-from config.sensors import sensors
-from config.sys import sys_vars
+from src.config.sensors import sensors
+from src.config.sys import sys_vars
 
 class Config:
     _instance = None
