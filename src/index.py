@@ -4,7 +4,6 @@ from helper.config_helper import getConfig
 from core.sensor_network import SensorNetwork
 from core.deduplicator import Deduplicator
 from core.geofilter import GeoFilter
-from core.data_splitter import DataSplitter
 from core.data_splitter import UpdateDetector
 import json
 
