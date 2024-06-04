@@ -5,13 +5,14 @@ class UpdateDetector(StreamConsumer):
     POSITION_UPDATE_FIELDS = ['lat', 'lon', 'alt']
     FLIGHT_UPDATE_FIELDS = ['fli', 'squ']
 
-    def __init__(self, *args, stale_data_age=30, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, stale_data_age=5,stale_check_period=10, **kwargs):
+        super().__init__(*args)
         self.position_queue = asyncio.Queue(100)
         self.flightdata_queue = asyncio.Queue(100)
         self.ref_data = {}
         self._last_check_time = 0
         self._stale_data_age = stale_data_age
+        self._stale_check_period = stale_check_period
 
     async def process_item(self, item):
         try:
@@ -50,7 +51,15 @@ class UpdateDetector(StreamConsumer):
 
 
     def _check_aged_data(self, latest_report_time):
-        if latest_report_time < (self._last_check_time + 60):
+
+        """
+
+        Update _last_check_time after every 1 minute
+        Delete aged data of previous 30 seconds
+
+        """
+
+        if latest_report_time < (self._last_check_time + self._stale_check_period):
             return
         self._last_check_time = latest_report_time
 

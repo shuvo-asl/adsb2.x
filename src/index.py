@@ -44,6 +44,8 @@ async def process():
     sensorNetwork = SensorNetwork(all_sensors)
     deduplicator = Deduplicator(sensorNetwork.data())
 
+    print(deduplicator.items.values())
+
     geo_filter = GeoFilter(deduplicator.filter())
     update = UpdateDetector(geo_filter.filter())
     sink_position_data = OutputMonitor(update.position_update())

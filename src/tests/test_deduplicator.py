@@ -42,7 +42,7 @@ async def test_deduplication():
     sum_items = 0
     async for number in output_data:
         nb_items += 1
-        sum_items += json.loads(number)['data']
+        sum_items += number['data']
     # assert the correct results
     assert nb_items == 100
     assert sum_items == (100 * (101)) / 2
@@ -71,24 +71,8 @@ async def test_aged_data_deletion():
     )
 
     async for item in deduplication.filter():
-        item_decode = json.loads(item)
-        item_uti = item_decode["uti"]
+        item_uti = item["uti"]
 
         assert min(deduplication.items.values()) >= (
                 item_uti - (STALE_CHECK_PERIOD + STALE_DATA_AGE)
         )
-
-
-if __name__ == "__main__":
-    test_aged_data_deletion()
-
-# async def timed_data(data_stream):
-#     async for item in data_stream:
-#         data = json.dumps({"data": item, "uti": item / 2})
-#         yield data
-
-# async def print_numbers():
-#     async for item in timed_data(source_data()):
-#         print(item)
-#
-# asyncio.run(print_numbers())
