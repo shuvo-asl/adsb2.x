@@ -43,7 +43,6 @@ class SensorNetwork(StreamGenerator):
     async def data(self):
         while True:
             data = await self.json_queue.get()
-            print(data)
             yield data
     async def closed(self):
         await asyncio.gather(*self._tasks)

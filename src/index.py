@@ -23,7 +23,7 @@ class OutputMonitor(StreamConsumer):
         """ Smoke test printer to show data flow """
         if self.output_char == 'f':
             print('')
-            print(self.output_char, {k: item[k] for k in ('uti', 'hex', 'fli', 'squ', 'tru')})
+            print(self.output_char, {k: item[k] for k in ('uti', 'hex', 'fli', 'squ', 'tru','state')})
         else:
             print(self.output_char, end='')
 
@@ -43,8 +43,6 @@ async def process():
 
     sensorNetwork = SensorNetwork(all_sensors)
     deduplicator = Deduplicator(sensorNetwork.data())
-
-    print(deduplicator.items.values())
 
     geo_filter = GeoFilter(deduplicator.filter())
     update = UpdateDetector(geo_filter.filter())

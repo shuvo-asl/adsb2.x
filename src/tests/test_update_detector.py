@@ -59,13 +59,13 @@ async def test_flight_update():
     assert len(result) == 1
     assert result[0] == flight_test_data[0]
 
-
-STALE_CHECK_PERIOD = 10
-STALE_DATA_AGE = 5
+STALE_CHECK_PERIOD = 5
+STALE_DATA_AGE = 10
 @pytest.mark.asyncio
 async def test_aged_data_deletion():
     """ Delete Aged data """
-    update = UpdateDetector(flight_source_data())
+    update = UpdateDetector(flight_source_data(),stale_data_age=STALE_DATA_AGE,stale_check_period=STALE_CHECK_PERIOD)
+    await update.closed()
     async for item in update.flight_update():
         item_uti = item["uti"]
 
@@ -73,4 +73,3 @@ async def test_aged_data_deletion():
         min_uti_value = min(val["uti"] for val in update.ref_data.values())
 
         assert min_uti_value >= (item_uti - (STALE_CHECK_PERIOD + STALE_DATA_AGE))
-    await update.closed()  # Await the task to ensure it has terminated
