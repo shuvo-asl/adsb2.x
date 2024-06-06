@@ -22,47 +22,23 @@ class UpdateDetector(StreamConsumer):
         except KeyError:
             ref = None
 
-        await self.update(
-            ref,
-            item,
-            self.POSITION_UPDATE_FIELDS,
-            self.output_changes,
-            self.position_queue)
-        await self.update(
-            ref,
-            item,
-            self.FLIGHT_UPDATE_FIELDS,
-            self.process_flight_change,
-            self.flightdata_queue)
-        # for fields, queue in [(self.POSITION_UPDATE_FIELDS, self.position_queue), (self.FLIGHT_UPDATE_FIELDS, self.flightdata_queue)]:
-        #     await self.update(ref, item, fields, queue)
+        if ref is None or item['uti'] > ref['uti']:
+            for fields, queue in [(self.POSITION_UPDATE_FIELDS, self.position_queue),
+                                  (self.FLIGHT_UPDATE_FIELDS, self.flightdata_queue)]:
+                await self.update(ref, item, fields, queue)
+            self.ref_data[item['hex']] = item
+            await self._check_aged_data(item['uti'])
 
-        self.ref_data[item['hex']] = item
-        self._check_aged_data(item['uti'])
-
-    async def update(self, ref, item, fields, process_changes, output_queue):
-        if ref is None or {k: ref[k] for k in fields} != {k: item[k] for k in fields}:
-            await process_changes(ref,item,output_queue)
-
-
-    async def output_changes(self, ref,item,output_queue):
-        await output_queue.put(item)
-
-    async def process_flight_change(self, ref,item,output_queue):
+    @staticmethod
+    async def update(ref, item, fields, output_queue):
+        """ Output item to output_queue if fields differ from previous reports """
+        item['state'] = None
         if ref is None:
             item['state'] = 'START'
-            await output_queue.put(item)
-        elif ref['fli'] != item['fli']:
-            item['state'] = 'END'
-            await output_queue.put(item)
-        elif ref['squ'] != item['squ']:
+        elif {k: ref[k] for k in fields} != {k: item[k] for k in fields}:
             item['state'] = 'UPDATE'
+        if item['state']:
             await output_queue.put(item)
-        else:
-            # Should never be here
-            log = logging.getLogger(__name__)
-            log.error("Flight data change not identified. ref:%s item:%s", ref, item)
-
 
     async def position_update(self):
         while self._running:
@@ -78,32 +54,35 @@ class UpdateDetector(StreamConsumer):
                 break
             yield item
 
+    async def finalise(self):
+        """ Insert stopping sentinel to all outputs """
+        for output_queue in (self.flightdata_queue, self.position_queue):
+            await output_queue.put(None)
     async def stop(self):
         self._running = False
-        await self.position_queue.put(None)
-        await self.flightdata_queue.put(None)
+        await self.finalise()
 
 
-    def _check_aged_data(self, latest_report_time):
+    async def _check_aged_data(self, latest_report_time):
 
         """
-
         Update _last_check_time after every 1 minute
         Delete aged data of previous 30 seconds
-
         """
 
         if latest_report_time < (self._last_check_time + self._stale_check_period):
             return
         self._last_check_time = latest_report_time
 
-        print('checking stale aircraft tracks')
         min_age = latest_report_time - self._stale_data_age
-        self._delete_aged_data(min_age)
+        await self._delete_aged_data(min_age)
 
-    def _delete_aged_data(self, min_age):
+    async def _delete_aged_data(self, min_age):
         """ Terminate flight tracking for tacks older than min_age """
-        for hex_code in self.ref_data.copy():
-            if self.ref_data[hex_code]['uti'] < min_age:
-                del self.ref_data[hex_code]
-                print('d', end='')
+        for ac_hex in self.ref_data.copy():
+            ref = self.ref_data[ac_hex]
+            if ref['uti'] < min_age:
+                ref['state'] = 'END'
+                await self.flightdata_queue.put(ref)
+                await self.position_queue.put(ref)
+                del self.ref_data[ac_hex]
