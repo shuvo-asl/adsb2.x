@@ -4,7 +4,7 @@ from helper.config_helper import getConfig
 from core.sensor_network import SensorNetwork
 from core.deduplicator import Deduplicator
 from core.geofilter import GeoFilter
-from core.data_splitter import UpdateDetector
+from core.data_splitter import FlightChangeDetector,PositionChangeDetector
 import json
 
 async def open_data(input_stream):
@@ -44,15 +44,23 @@ async def process():
     sensorNetwork = SensorNetwork(all_sensors)
     deduplicator = Deduplicator(sensorNetwork.data())
 
-    geo_filter = GeoFilter(deduplicator.filter())
-    update = UpdateDetector(geo_filter.filter())
-    sink_position_data = OutputMonitor(update.position_update())
-    sink_flight_data = OutputMonitor(update.flight_update(), output_char='f')
+    # show_data = asyncio.create_task(open_data(deduplicator.filter()))
+    show_data = OutputMonitor(deduplicator.filter(), output_char='f')
+
+    # geo_filter = GeoFilter(deduplicator.filter())
+    #
+    # flightUpdate = FlightChangeDetector(geo_filter.filter())
+    # positionUpdate = PositionChangeDetector(flightUpdate.data())
+    #
+    # sink_flight_data = OutputMonitor(flightUpdate.changes())
+    # sink_position_data = OutputMonitor(positionUpdate.changes(), output_char='f')
+    # sink_flight_update_data = OutputMonitor(positionUpdate.data(), output_char='f')
 
     await sensorNetwork.closed()
-    await update.closed()
-    await sink_position_data.closed()
-    await sink_flight_data.closed()
+    await show_data.closed()
+    # await sink_position_data.closed()
+    # await sink_flight_data.closed()
+    # await sink_flight_update_data.closed()
 
 def main():
     """ Application Entry Point """

@@ -62,3 +62,24 @@ class StreamConsumer(ABC):
     @abstractmethod
     async def stop(self):
         """ Indicate stopping to downstream processes """
+
+
+class StreamTee(ABC):
+    def __init__(self, input_stream):
+        self.input_stream = input_stream
+
+    async def data(self):
+        """ Asyncio task to run input pipeline """
+        async for item in self.input_stream:
+            await self.process_item(item)
+            yield item
+
+        await self.finalise()
+
+    @abstractmethod
+    async def process_item(self, item):
+        """ Process each incoming item """
+
+    @abstractmethod
+    async def finalise(self):
+        """ Indicate stopping to downstream processes """

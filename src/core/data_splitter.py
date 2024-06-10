@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from src.core.abstracts.pipeline import StreamConsumer
-
+from src.core.abstracts.pipeline import StreamTee
 class UpdateDetector(StreamConsumer):
     POSITION_UPDATE_FIELDS = ['lat', 'lon', 'alt']
     FLIGHT_UPDATE_FIELDS = ['fli', 'squ']
@@ -86,3 +86,52 @@ class UpdateDetector(StreamConsumer):
                 await self.flightdata_queue.put(ref)
                 await self.position_queue.put(ref)
                 del self.ref_data[ac_hex]
+
+
+
+class ChangeDetector(StreamTee):
+    def __init__(self,input_stream,change_fields = None):
+        self.ref_data = {}
+        self.change_fields = change_fields
+        self.output_queue = asyncio.Queue(100)
+        super().__init__(input_stream)
+
+
+    async def process_item(self, item):
+
+        try:
+            ref = self.ref_data[item['hex']]
+            for field in self.change_fields:
+                if(item[field] is not None and ref[field] != item[field]):
+                    ref[item['hex']][field] = item[field]
+
+            if self.ref_data[item['hex']] != ref:
+                self.ref_data[item['hex']] = ref
+                await self.output_queue.put(ref)
+        except KeyError:
+            self.ref_data[item['hex']] = item
+            await self.output_queue.put(item)
+
+
+
+    async def changes(self):
+        while True:
+            item = await self.output_queue.get()
+            if item is None:
+                break
+            yield item
+    async def finalise(self):
+        await self.output_queue.put(None)
+
+
+class FlightChangeDetector(ChangeDetector):
+    def __init__(self,input_stream,change_stream=('fli','squ')):
+        super().__init__(input_stream,change_stream)
+
+
+
+class PositionChangeDetector(ChangeDetector):
+    def __init__(self,input_stream,change_stream=('lat','lon','alt')):
+        super().__init__(input_stream,change_stream)
+
+
