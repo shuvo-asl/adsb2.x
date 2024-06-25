@@ -1,6 +1,7 @@
 
 from src.core.abstracts.pipeline import StreamFilter
 import json
+from datetime import datetime,timezone
 class Deduplicator(StreamFilter):
 
     def __init__(self,input_stream,stale_check_period=60, stale_data_age=600):
@@ -18,6 +19,11 @@ class Deduplicator(StreamFilter):
             # Store message in items and yield it to downstream processing
             item_decode = json.loads(item)
             self.items[item] = item_decode["uti"]
+            rx_time = datetime.fromtimestamp(
+                item_decode['uti'] + (item_decode['ns'] / 1e9),
+                timezone.utc
+            )
+            item_decode['rx_time'] = rx_time
             output_items = item_decode
 
             # Delete aged items

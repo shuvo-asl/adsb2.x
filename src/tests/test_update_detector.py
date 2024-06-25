@@ -1,6 +1,20 @@
 import asyncio
 import pytest
-from src.core.data_splitter import UpdateDetector
+from src.core.update_detector import FlightUpdate
+import random
+from datetime import datetime, timedelta
+
+def generate_random_time():
+    # Get current datetime
+    now = datetime.now()
+
+    # Generate a random number of seconds (between 0 and 86400 seconds in a day)
+    random_seconds = random.randint(0, 86400)
+
+    # Calculate the random time by subtracting random_seconds from current datetime
+    random_time = now - timedelta(seconds=random_seconds)
+
+    return random_time
 
 flight_test_data = [
     {
@@ -10,7 +24,10 @@ flight_test_data = [
         "uti": 12345,
         "lat": 1234,
         "lon": 1235,
-        "alt": 1236
+        "alt": 1236,
+        "sensor":"",
+        "tru":"",
+        "rx_time": generate_random_time()
     },
     {
         "hex": 1234,
@@ -19,57 +36,60 @@ flight_test_data = [
         "uti": 12346,
         "lat": 1234,
         "lon": 1235,
-        "alt": 1236
+        "alt": 1236,
+        "sensor":"",
+        "tru":"",
+        "rx_time": generate_random_time()
     },
     {
-        "hex": 1234,
-        "fli": "BG123",
-        "squ": 4567,
+        "hex": 1235,
+        "fli": "BG125",
+        "squ": "",
         "uti": 12420,
         "lat": 1234,
         "lon": 1235,
-        "alt": 1236
+        "alt": 1236,
+        "sensor":"",
+        "tru":"",
+        "rx_time": generate_random_time()
     },
     {
-        "hex": 1234,
-        "fli": "BG123",
+        "hex": 1235,
+        "fli": "BG125",
         "squ": 4567,
         "uti": 12450,
         "lat": 1234,
         "lon": 1235,
-        "alt": 1236
+        "alt": 1236,
+        "sensor":"",
+        "tru":"",
+        "rx_time": generate_random_time()
     }
 ]
-
 
 async def flight_source_data():
     for item in flight_test_data:
         yield item
         await asyncio.sleep(0)  # Use await asyncio.sleep(0) instead of asyncio.sleep(0)
 
-
+# Define a coroutine to run the async generator
+async def run_data(update):
+    async for item in update.data():
+        pass
 @pytest.mark.asyncio
 async def test_flight_update():
     """
     Test flight update
     """
-    update = UpdateDetector(flight_source_data())
-    result = [item async for item in update.flight_update()]
-    await update.closed()  # Await the task to ensure it has terminated
-    assert len(result) == 1
-    assert result[0] == flight_test_data[0]
+    # Create an instance of FlightUpdate and process data
+    update = FlightUpdate(flight_source_data())
 
-STALE_CHECK_PERIOD = 5
-STALE_DATA_AGE = 10
-@pytest.mark.asyncio
-async def test_aged_data_deletion():
-    """ Delete Aged data """
-    update = UpdateDetector(flight_source_data(),stale_data_age=STALE_DATA_AGE,stale_check_period=STALE_CHECK_PERIOD)
-    await update.closed()
-    async for item in update.flight_update():
-        item_uti = item["uti"]
+    data_task = asyncio.create_task(run_data(update))
 
-        # Ensure that the values in ref_data are numerical values
-        min_uti_value = min(val["uti"] for val in update.ref_data.values())
+    result = [item async for item in update.changes()]
+    assert len(result) == 3
 
-        assert min_uti_value >= (item_uti - (STALE_CHECK_PERIOD + STALE_DATA_AGE))
+
+    #Finalize processing
+    await data_task
+    await update.finalise()

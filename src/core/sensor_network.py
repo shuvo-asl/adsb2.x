@@ -30,7 +30,7 @@ class SensorNetwork(StreamGenerator):
         for sensor in self.sensor_list:
             """Instantiate a receiver and run it as an asyncio task"""
             rx = Receiver(sensor["url"], self.request_period, self.json_queue)
-            task = asyncio.create_task(rx.process())
+            task = asyncio.create_task(rx.receive())
             rx_tasks.append(task)
         return rx_tasks
 

@@ -41,15 +41,11 @@ class StreamConsumer(ABC):
 
     async def _run(self):
         """ Asyncio task to run input pipeline """
-        try:
-            async for item in self.input_stream:
-                if not self._running:
-                    break
+        async for item in self.input_stream:
+            try:
                 await self.process_item(item)
-        except asyncio.CancelledError:
-            pass
-        finally:
-            await self.stop()
+            except Exception as e:
+                print(e)
 
     async def closed(self):
         """ Awaitable for internal task to terminate """

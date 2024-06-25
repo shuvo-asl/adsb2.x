@@ -6,7 +6,7 @@ sensors = [
     },
     {
         "name": "Chittagong Sensor",
-        "url": "192.168.101.3",
+        "url": "45.125.223.124",
         "location": "Chittagong Bangladesh"
     }
 ]

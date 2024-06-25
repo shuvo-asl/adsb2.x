@@ -15,14 +15,14 @@ class Receiver:
         self.request_period = request_period
         self.output_queue = queue
 
-    def _set_online_status(self, is_online):
+    def _set_online_status(self, is_online:bool,note=""):
         if is_online:
             print(
                 "|-----------------------------------------------------------------------|"
             )
-            print("| " + self.sensor_url + " is online")
+            print("| " + self.sensor_url + " is online",note)
         else:
-            print(self.sensor_url + " is offline")
+            print(self.sensor_url + " is offline",note)
             print(
                 "|-----------------------------------------------------------------------|"
             )
@@ -40,19 +40,13 @@ class Receiver:
                             self._set_online_status(True)
                             response_text = await response.text()
                             for line in response_text[1:-2].splitlines():
-                                yield line.strip(',')
-                            # data_json = json.loads(await response.text())
-                            # # # check that response is in fact json
-                            # for line in data_json:
-                            #     yield line
+                                json_line = line.strip(',')
+                                json_line = json_line[0] + '"sensor":"'+self.sensor_url+'",'+json_line[1:]
+                                await self.output_queue.put(json_line)
                         else:
-                            self._set_online_status(False)
+                            self._set_online_status(False,note='200')
                 except TimeoutError:
-                    self._set_online_status(False)
+                    self._set_online_status(False,note='Timeout')
+                except aiohttp.client_exceptions.ClientConnectionError:
+                    self._set_online_status(False, note='Connection Error')
                 await asyncio.sleep(self.request_period)
-
-    async def process(self):
-        """Get and process incoming JSON"""
-        async for line in self.receive():
-            await self.output_queue.put(line)
-            # print(f"|CALL SIGN {line['fli']} ------ LAT {line['lat']} ------ LON {line['lon']}")
