@@ -1,6 +1,9 @@
+import logging
+
 import aiohttp
 import json
 import asyncio
+import logging
 
 """
     Reference link for this codebase:
@@ -16,13 +19,16 @@ class Receiver:
         self.output_queue = queue
 
     def _set_online_status(self, is_online:bool,note=""):
+        log = logging.getLogger(__name__)
         if is_online:
             print(
                 "|-----------------------------------------------------------------------|"
             )
-            print("| " + self.sensor_url + " is online",note)
+            log.info("| " + self.sensor_url + " is online",note)
+            # print("| " + self.sensor_url + " is online",note)
         else:
-            print(self.sensor_url + " is offline",note)
+            # print(self.sensor_url + " is offline",note)
+            log.warning("| " + self.sensor_url + " is online", note)
             print(
                 "|-----------------------------------------------------------------------|"
             )

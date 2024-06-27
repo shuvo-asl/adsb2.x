@@ -5,7 +5,7 @@ from core.sensor_network import SensorNetwork
 from core.deduplicator import Deduplicator
 from core.geofilter import GeoFilter
 from core.update_detector import FlightUpdate,PositionUpdate
-
+from core.abstracts.logger import start_logger
 async def open_data(input_stream):
     async for item in input_stream:
         print(item)
@@ -36,6 +36,10 @@ class OutputMonitor(StreamConsumer):
 
 async def process():
     """ Core Asynchronous processing """
+
+    # Start Logging queue listener
+    start_logger()
+
     all_sensors = getConfig("sensors")
 
     sensor_network = SensorNetwork(all_sensors)
