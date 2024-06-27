@@ -6,6 +6,7 @@ from core.deduplicator import Deduplicator
 from core.geofilter import GeoFilter
 from core.update_detector import FlightUpdate,PositionUpdate
 from core.abstracts.logger import start_logger
+import logging
 async def open_data(input_stream):
     async for item in input_stream:
         print(item)
@@ -38,7 +39,9 @@ async def process():
     """ Core Asynchronous processing """
 
     # Start Logging queue listener
-    start_logger()
+    await start_logger()
+    log = logging.getLogger(__name__)
+    log.debug("Hello Everyone")
 
     all_sensors = getConfig("sensors")
 
@@ -47,14 +50,14 @@ async def process():
     geofilter = GeoFilter(deduplicator.filter())
     flightupdate = FlightUpdate(geofilter.filter())
     positionupdate = PositionUpdate(flightupdate.data())
-    flight_sink = OutputMonitor(flightupdate.changes(), output_char='f')
-    pos_sink = OutputMonitor(positionupdate.changes(), output_char='x')
-    pipeline_sink = OutputMonitor(positionupdate.data())
+    # flight_sink = OutputMonitor(flightupdate.changes(), output_char='f')
+    # pos_sink = OutputMonitor(positionupdate.changes(), output_char='x')
+    # pipeline_sink = OutputMonitor(positionupdate.data())
 
     await sensor_network.closed()
-    await flight_sink.closed()
-    await pos_sink.closed()
-    await pipeline_sink.closed()
+    # await flight_sink.closed()
+    # await pos_sink.closed()
+    # await pipeline_sink.closed()
 
 def main():
     """ Application Entry Point """
